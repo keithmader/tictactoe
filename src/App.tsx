@@ -42,29 +42,31 @@ export default function App() {
       setAiThinking(true);
       const delay = 300 + Math.random() * 200;
       const timer = setTimeout(() => {
-        setBoard((prev) => {
-          const move = getAiMove(prev);
-          const next = makeMove(prev, move, "O");
-          if (!next) return prev;
-          const res = checkResult(next);
-          if (res) {
-            setResult(res);
-            setGameState("gameover");
-            if ("draw" in res) {
-              setScore((s) => ({ ...s, draws: s.draws + 1 }));
-            } else {
-              setScore((s) => ({ ...s, losses: s.losses + 1 }));
-            }
+        const move = getAiMove(board);
+        const next = makeMove(board, move, "O");
+        if (!next) {
+          setAiThinking(false);
+          return;
+        }
+        setBoard(next);
+        const res = checkResult(next);
+        if (res) {
+          setResult(res);
+          setGameState("gameover");
+          if ("draw" in res) {
+            setScore((s) => ({ ...s, draws: s.draws + 1 }));
           } else {
-            setTurn("X");
+            setScore((s) => ({ ...s, losses: s.losses + 1 }));
           }
-          return next;
-        });
+        } else {
+          setTurn("X");
+        }
         setAiThinking(false);
       }, delay);
       return () => clearTimeout(timer);
     }
-  }, [turn, gameState, aiThinking]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turn, gameState]);
 
   // Transition from gameover to prompt after a brief pause
   useEffect(() => {

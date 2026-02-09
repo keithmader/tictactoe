@@ -45,7 +45,7 @@ export default function App() {
   useEffect(() => {
     if (gameState === "intro") {
       if (introChars < INTRO_TEXT.length) {
-        const timer = setTimeout(() => setIntroChars((c) => c + 1), 250);
+        const timer = setTimeout(() => setIntroChars((c) => c + 1), 62.5);
         return () => clearTimeout(timer);
       } else {
         const timer = setTimeout(() => setGameState("playing"), 2000);
@@ -221,7 +221,7 @@ export default function App() {
     <Box flexDirection="column" padding={1}>
       {gameState === "password" && (
         <>
-          <Text>Enter password: {passwordInput}<Text dimColor>_</Text></Text>
+          <Text>Enter password: {"*".repeat(passwordInput.length)}<Text dimColor>_</Text></Text>
           {passwordError && <Text color="red">Access denied.</Text>}
         </>
       )}

@@ -13,7 +13,9 @@ import {
 import { getAiMove } from "./ai.js";
 
 type Score = { wins: number; losses: number; draws: number };
-type GameState = "playing" | "gameover" | "prompt";
+type GameState = "password" | "intro" | "playing" | "gameover" | "prompt";
+
+const INTRO_TEXT = "GREETINGS PROFESSOR FALKEN.\nSHALL WE PLAY A GAME?";
 
 export default function App() {
   const { exit } = useApp();
@@ -21,9 +23,12 @@ export default function App() {
   const [cursor, setCursor] = useState(4);
   const [turn, setTurn] = useState<Player>("X");
   const [result, setResult] = useState<GameResult>(null);
-  const [gameState, setGameState] = useState<GameState>("playing");
+  const [gameState, setGameState] = useState<GameState>("password");
   const [score, setScore] = useState<Score>({ wins: 0, losses: 0, draws: 0 });
   const [aiThinking, setAiThinking] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
+  const [introChars, setIntroChars] = useState(0);
 
   const winLine = result && "winner" in result && result.winner ? getWinningLine(board) : null;
 
@@ -35,6 +40,19 @@ export default function App() {
     setGameState("playing");
     setAiThinking(false);
   }, []);
+
+  // Intro typing effect
+  useEffect(() => {
+    if (gameState === "intro") {
+      if (introChars < INTRO_TEXT.length) {
+        const timer = setTimeout(() => setIntroChars((c) => c + 1), 250);
+        return () => clearTimeout(timer);
+      } else {
+        const timer = setTimeout(() => setGameState("playing"), 2000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [gameState, introChars]);
 
   // AI turn
   useEffect(() => {
@@ -77,6 +95,27 @@ export default function App() {
   }, [gameState]);
 
   useInput((input, key) => {
+    if (gameState === "password") {
+      if (key.return) {
+        if (passwordInput === "Joshua") {
+          setPasswordError(false);
+          setGameState("intro");
+        } else {
+          setPasswordInput("");
+          setPasswordError(true);
+        }
+      } else if (key.backspace || key.delete) {
+        setPasswordInput((p) => p.slice(0, -1));
+        setPasswordError(false);
+      } else if (input.length === 1 && !key.ctrl && !key.meta) {
+        setPasswordInput((p) => p + input);
+        setPasswordError(false);
+      }
+      return;
+    }
+
+    if (gameState === "intro") return;
+
     if (gameState === "playing" && turn === "X" && !aiThinking) {
       if (key.upArrow) setCursor((c) => (c < 3 ? c : c - 3));
       if (key.downArrow) setCursor((c) => (c > 5 ? c : c + 3));
@@ -180,33 +219,48 @@ export default function App() {
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Text bold color="yellow">
-        Tic Tac Toe
-      </Text>
-      <Text> </Text>
-
-      {renderRow(0)}
-      {separator}
-      {renderRow(3)}
-      {separator}
-      {renderRow(6)}
-
-      <Text> </Text>
-      <Text bold>{statusMessage()}</Text>
-
-      <Text> </Text>
-      <Text dimColor>
-        W:{score.wins} L:{score.losses} D:{score.draws}
-      </Text>
-
-      {gameState === "prompt" && (
-        <Box marginTop={1}>
-          <Text color="yellow">Play again? (y/n)</Text>
-        </Box>
+      {gameState === "password" && (
+        <>
+          <Text>Enter password: {passwordInput}<Text dimColor>_</Text></Text>
+          {passwordError && <Text color="red">Access denied.</Text>}
+        </>
       )}
 
-      <Text> </Text>
-      <Text dimColor>Arrow keys: move | Enter: place | q: quit</Text>
+      {gameState === "intro" && (
+        <Text>{INTRO_TEXT.slice(0, introChars)}</Text>
+      )}
+
+      {(gameState === "playing" || gameState === "gameover" || gameState === "prompt") && (
+        <>
+          <Text bold color="yellow">
+            Tic Tac Toe
+          </Text>
+          <Text> </Text>
+
+          {renderRow(0)}
+          {separator}
+          {renderRow(3)}
+          {separator}
+          {renderRow(6)}
+
+          <Text> </Text>
+          <Text bold>{statusMessage()}</Text>
+
+          <Text> </Text>
+          <Text dimColor>
+            W:{score.wins} L:{score.losses} D:{score.draws}
+          </Text>
+
+          {gameState === "prompt" && (
+            <Box marginTop={1}>
+              <Text color="yellow">Play again? (y/n)</Text>
+            </Box>
+          )}
+
+          <Text> </Text>
+          <Text dimColor>Arrow keys: move | Enter: place | q: quit</Text>
+        </>
+      )}
     </Box>
   );
 }

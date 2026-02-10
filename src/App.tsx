@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Box, Text, useInput, useApp } from "ink";
-import { spawn, type ChildProcess } from "child_process";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
 import {
   Board,
   Cell,
@@ -14,6 +11,7 @@ import {
   getWinningLine,
 } from "./game-logic.js";
 import { getAiMove } from "./ai.js";
+import { createAudioEngine, type AudioEngine } from "./audio.js";
 
 type Score = { wins: number; losses: number; draws: number };
 type GameState = "password" | "intro" | "respond" | "gamelist" | "message" | "playing" | "gameover" | "prompt";
@@ -40,9 +38,6 @@ const GAMES = [
   "GLOBAL THERMONUCLEAR WAR",
   "QUIT",
 ];
-const GREETING_SOUND = resolve(dirname(fileURLToPath(import.meta.url)), "..", "WargamesKeystrokeSoundEdited.mp3");
-const GAME_SOUND = resolve(dirname(fileURLToPath(import.meta.url)), "..", "ShallWePlayAGameEdited.mp3");
-const STRANGE_SOUND = resolve(dirname(fileURLToPath(import.meta.url)), "..", "StrangeGameEdited.mp3");
 const GREETING_END = INTRO_TEXT.indexOf("\n");
 
 export default function App() {
@@ -64,6 +59,7 @@ export default function App() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [exitAfterMessage, setExitAfterMessage] = useState(false);
   const [muteMessageSound, setMuteMessageSound] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
 
   const [cursorVisible, setCursorVisible] = useState(true);
   useEffect(() => {
@@ -83,41 +79,21 @@ export default function App() {
     setAiThinking(false);
   }, []);
 
-  // Pre-spawn PowerShell and load audio during password phase
-  const psRef = useRef<ChildProcess | null>(null);
-  const psReady = useRef(false);
+  // Initialize audio engine
+  const audioRef = useRef<AudioEngine | null>(null);
   const pendingIntro = useRef(false);
   useEffect(() => {
-    const greetingWinPath = `\\\\wsl.localhost\\Ubuntu${GREETING_SOUND.replace(/\//g, "\\")}`;
-    const gameWinPath = `\\\\wsl.localhost\\Ubuntu${GAME_SOUND.replace(/\//g, "\\")}`;
-    const strangeWinPath = `\\\\wsl.localhost\\Ubuntu${STRANGE_SOUND.replace(/\//g, "\\")}`;
-    const ps = spawn("powershell.exe", ["-NoExit", "-Command", "-"], {
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    psRef.current = ps;
-    ps.stdin?.write(
-      `Add-Type -AssemblyName PresentationCore\n` +
-      `$g = New-Object System.Windows.Media.MediaPlayer\n` +
-      `$g.Add_MediaEnded({ $g.Position = [TimeSpan]::Zero; $g.Play() })\n` +
-      `$g.Open([Uri]'${greetingWinPath}')\n` +
-      `$s = New-Object System.Windows.Media.MediaPlayer\n` +
-      `$s.Open([Uri]'${gameWinPath}')\n` +
-      `$w = New-Object System.Windows.Media.MediaPlayer\n` +
-      `$w.Open([Uri]'${strangeWinPath}')\n` +
-      `Write-Host 'READY'\n`,
-    );
-    ps.stdout?.on("data", (data) => {
-      if (data.toString().includes("READY")) {
-        psReady.current = true;
-        if (pendingIntro.current) {
-          pendingIntro.current = false;
-          setGameState("intro");
-        }
+    const engine = createAudioEngine();
+    audioRef.current = engine;
+    engine.init().then(() => {
+      setAudioReady(true);
+      if (pendingIntro.current) {
+        pendingIntro.current = false;
+        setGameState("intro");
       }
     });
     return () => {
-      ps.stdin?.write("$g.Close(); $s.Close(); $w.Close(); exit\n");
-      ps.kill();
+      engine.close();
     };
   }, []);
 
@@ -125,14 +101,15 @@ export default function App() {
   const greetingSoundPlayed = useRef(false);
   const gameSoundPlayed = useRef(false);
   useEffect(() => {
-    if (gameState === "intro") {
+    if (gameState === "intro" && audioRef.current) {
       if (!greetingSoundPlayed.current && introChars === 0) {
         greetingSoundPlayed.current = true;
-        psRef.current?.stdin?.write("$g.Play()\n");
+        audioRef.current.loop("greeting");
       }
       if (!gameSoundPlayed.current && introChars === GREETING_END + 1) {
         gameSoundPlayed.current = true;
-        psRef.current?.stdin?.write("$g.Stop(); $s.Play()\n");
+        audioRef.current.stop("greeting");
+        audioRef.current.play("game");
       }
     }
   }, [gameState, introChars]);
@@ -186,33 +163,36 @@ export default function App() {
   const messageSoundPlayed = useRef(false);
   const messageSoundStopped = useRef(false);
   useEffect(() => {
-    if (gameState === "message") {
+    if (gameState === "message" && audioRef.current) {
+      const audio = audioRef.current;
       if (messageChars < messageText.length) {
         if (!messageSoundPlayed.current) {
           messageSoundPlayed.current = true;
           if (muteMessageSound) {
-            psRef.current?.stdin?.write("$w.Position = [TimeSpan]::Zero; $w.Play()\n");
+            audio.play("strange");
           } else {
-            psRef.current?.stdin?.write("$g.Position = [TimeSpan]::Zero; $g.Play()\n");
+            audio.loop("greeting");
           }
         }
         const timer = setTimeout(() => setMessageChars((c) => c + 1), 62.5);
         return () => clearTimeout(timer);
       } else if (countdown === null) {
         if (exitAfterMessage) {
-          // Let the sound play twice (~2.8s) then exit
           const timer = setTimeout(() => {
-            psRef.current?.stdin?.write("$g.Stop()\n");
+            audio.stop("greeting");
             exit();
           }, 3000);
           return () => clearTimeout(timer);
         } else {
-          // Wait for audio to finish before stopping and starting countdown
           const soundDelay = muteMessageSound ? 3000 : 0;
           const timer = setTimeout(() => {
             if (!messageSoundStopped.current) {
               messageSoundStopped.current = true;
-              psRef.current?.stdin?.write(muteMessageSound ? "$w.Stop()\n" : "$g.Stop()\n");
+              if (muteMessageSound) {
+                audio.stop("strange");
+              } else {
+                audio.stop("greeting");
+              }
             }
             setCountdown(gWaitTime);
           }, soundDelay + 1000);
@@ -252,7 +232,7 @@ export default function App() {
       if (key.return) {
         if (passwordInput === "Joshua") {
           setPasswordError(false);
-          if (psReady.current) {
+          if (audioReady) {
             setGameState("intro");
           } else {
             pendingIntro.current = true;

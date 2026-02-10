@@ -6,7 +6,23 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.tsx",
-    "build": "tsc"
+    "build": "tsc",
+    "build:bundle": "node scripts/build.mjs",
+    "build:exe": "node scripts/build.mjs",
+    "build:all": "node scripts/build.mjs"
+  },
+  "pkg": {
+    "assets": [
+      "dist/WargamesKeystrokeSoundEdited.mp3",
+      "dist/ShallWePlayAGameEdited.mp3",
+      "dist/StrangeGameEdited.mp3"
+    ],
+    "targets": [
+      "node20-win-x64",
+      "node20-macos-x64",
+      "node20-macos-arm64"
+    ],
+    "outputPath": "dist"
   },
   "dependencies": {
     "ink": "^6.6.0",
@@ -14,7 +30,10 @@
     "react": "^19.2.4"
   },
   "devDependencies": {
+    "@types/node": "^25.2.2",
     "@types/react": "^19.2.13",
+    "@yao-pkg/pkg": "^6.3.0",
+    "esbuild": "^0.25.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

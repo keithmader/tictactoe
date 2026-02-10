@@ -1,0 +1,4 @@
+git clone https://github.com/keithmader/tictactoe.git tictactoekmv1
+cd tictactoekmv1
+npm install
+npm start

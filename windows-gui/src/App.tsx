@@ -219,7 +219,7 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameState === "password") {
         if (e.key === "Enter") {
-          if (passwordInput === "Joshua") {
+          if (passwordInput.toLowerCase() === "joshua") {
             setPasswordError(false);
             if (audioReady) {
               setGameState("intro");
@@ -245,7 +245,7 @@ export default function App() {
       if (gameState === "respond") {
         if (e.key === "Enter") {
           setResponseInput((prev) => {
-            if (prev.toLowerCase() === "yes") {
+            if (/^y(es)?$/i.test(prev.trim())) {
               setGameState("gamelist");
             } else if (prev.length > 0) {
               window.close();

@@ -230,7 +230,7 @@ export default function App() {
   useInput((input, key) => {
     if (gameState === "password") {
       if (key.return) {
-        if (passwordInput === "Joshua") {
+        if (passwordInput.toLowerCase() === "joshua") {
           setPasswordError(false);
           if (audioReady) {
             setGameState("intro");
@@ -255,7 +255,7 @@ export default function App() {
 
     if (gameState === "respond") {
       if (key.return) {
-        if (responseInput.toLowerCase() === "yes") {
+        if (/^y(es)?$/i.test(responseInput.trim())) {
           setResponseInput("");
           setGameState("gamelist");
         } else {

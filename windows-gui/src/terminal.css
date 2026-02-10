@@ -1,0 +1,199 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+:root {
+  --green: #ffffff;
+  --green-dim: #999999;
+  --green-bright: #ffffff;
+  --cyan: #00ccff;
+  --red: #ff3333;
+  --yellow: #ffcc00;
+  --bg: #0a0a0a;
+  --bg-cell: #111;
+  --bg-cursor: #333;
+  --text-glow: 0 0 5px rgba(255, 255, 255, 0.3), 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+body {
+  font-family: 'VT323', 'Courier New', monospace;
+  font-size: 22px;
+  color: var(--green);
+  text-shadow: var(--text-glow);
+}
+
+/* CRT scanline overlay */
+#root::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15) 0px,
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.terminal {
+  padding: 30px 40px;
+  min-height: 100vh;
+  position: relative;
+}
+
+.title {
+  color: var(--yellow);
+  font-weight: normal;
+  font-size: 28px;
+  text-shadow: 0 0 8px rgba(255, 204, 0, 0.5);
+  margin-bottom: 8px;
+}
+
+.bold {
+  font-weight: normal;
+}
+
+.dim {
+  color: var(--green-dim);
+  text-shadow: none;
+}
+
+.color-cyan {
+  color: var(--cyan);
+  text-shadow: 0 0 5px rgba(0, 204, 255, 0.5);
+}
+
+.color-red {
+  color: var(--red);
+  text-shadow: 0 0 5px rgba(255, 51, 51, 0.5);
+}
+
+.color-green-bright {
+  color: var(--green-bright);
+  font-weight: normal;
+  text-shadow: 0 0 8px rgba(102, 255, 102, 0.6);
+}
+
+.color-yellow {
+  color: var(--yellow);
+  text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+}
+
+.error {
+  color: var(--red);
+}
+
+/* Blinking cursor */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.cursor {
+  animation: blink 1s step-end infinite;
+}
+
+/* Game board */
+.board {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 50px);
+  grid-template-rows: repeat(3, 50px);
+  gap: 2px;
+  margin: 10px 0;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: normal;
+  background: var(--bg-cell);
+  cursor: pointer;
+  border: 1px solid var(--green-dim);
+  transition: background 0.1s;
+  user-select: none;
+}
+
+.cell:hover {
+  background: #1a1a1a;
+}
+
+.cell.is-cursor {
+  background: var(--bg-cursor);
+  border-color: var(--green);
+}
+
+.cell .x {
+  color: var(--cyan);
+  text-shadow: 0 0 5px rgba(0, 204, 255, 0.5);
+}
+
+.cell .o {
+  color: var(--red);
+  text-shadow: 0 0 5px rgba(255, 51, 51, 0.5);
+}
+
+.cell .win {
+  color: var(--green-bright);
+  text-shadow: 0 0 8px rgba(102, 255, 102, 0.6);
+}
+
+/* Game list */
+.game-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  max-width: 700px;
+}
+
+.game-list-item {
+  white-space: pre;
+}
+
+/* Input line */
+.input-line {
+  margin-top: 8px;
+}
+
+.spacer {
+  height: 12px;
+}
+
+.status {
+  font-weight: normal;
+  margin: 8px 0;
+}
+
+.score {
+  color: var(--green-dim);
+  text-shadow: none;
+}
+
+.hint {
+  color: var(--green-dim);
+  text-shadow: none;
+  margin-top: 8px;
+}
+
+/* Password masking */
+.password-mask {
+  letter-spacing: 2px;
+}

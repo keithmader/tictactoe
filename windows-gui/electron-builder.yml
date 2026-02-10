@@ -1,0 +1,21 @@
+appId: com.wargames.tictactoe
+productName: WarGames TicTacToe
+directories:
+  output: release
+files:
+  - dist/**/*
+  - electron/**/*
+win:
+  target: dir
+  icon: null
+mac:
+  target: dmg
+  category: public.app-category.games
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications

@@ -351,6 +351,94 @@ body {
   height: 12px;
 }
 
+/* Screen-reader / hidden input for mobile keyboard activation */
+.sr-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 16px; /* prevent iOS zoom */
+  pointer-events: none;
+}
+
+/* Position parents for sr-input */
+.password-field,
+.gamelist-input,
+.respond-input-wrap {
+  position: relative;
+}
+
+/* Prompt touch buttons */
+.prompt-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.prompt-btn {
+  font-family: inherit;
+  font-size: 1em;
+  padding: 8px 24px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  font-weight: 500;
+}
+
+.prompt-btn:active {
+  transform: scale(0.96);
+}
+
+.prompt-btn-yes {
+  background: var(--accent-green);
+  color: var(--bg);
+  border-color: var(--accent-green);
+}
+
+.prompt-btn-yes:hover {
+  box-shadow: 0 0 8px rgba(63, 185, 80, 0.4);
+}
+
+.prompt-btn-no {
+  background: var(--bg-surface);
+  color: var(--text);
+}
+
+.prompt-btn-no:hover {
+  background: var(--bg-hover);
+}
+
+/* Quit button for touch devices */
+.touch-quit {
+  margin-top: 12px;
+}
+
+.quit-btn {
+  font-family: inherit;
+  font-size: 0.85em;
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.quit-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.quit-btn:active {
+  transform: scale(0.96);
+}
+
 /* Mobile responsive */
 @media (max-width: 480px) {
   .game-list {

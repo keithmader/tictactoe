@@ -105,6 +105,11 @@ export default function App() {
   const [muteMessageSound, setMuteMessageSound] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
 
+  // Refs for mobile-friendly input elements
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+  const respondInputRef = useRef<HTMLInputElement>(null);
+  const gameChoiceInputRef = useRef<HTMLInputElement>(null);
+
   const winLine = result && "winner" in result && result.winner ? getWinningLine(board) : null;
 
   const resetGame = useCallback(() => {
@@ -142,6 +147,55 @@ export default function App() {
     gameSoundPlayed.current = false;
     messageSoundPlayed.current = false;
     messageSoundStopped.current = false;
+  }, []);
+
+  // Auto-focus input elements on screen transitions
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (gameState === "password") passwordInputRef.current?.focus();
+      else if (gameState === "respond") respondInputRef.current?.focus();
+      else if (gameState === "gamelist") gameChoiceInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [gameState]);
+
+  // Submit game choice (shared between input onKeyDown and document keydown)
+  const submitGameChoice = useCallback((choice: string) => {
+    const num = parseInt(choice, 10);
+    if (num >= 1 && num <= GAMES.length) {
+      const selected = GAMES[num - 1];
+      if (selected === "TIC TAC TOE") {
+        setGameState("playing");
+      } else if (selected === "QUIT") {
+        setMessageText("GOODBYE.");
+        setMessageChars(0);
+        setCountdown(null);
+        setExitAfterMessage(true);
+        setMuteMessageSound(false);
+        messageSoundPlayed.current = false;
+        messageSoundStopped.current = false;
+        setGameState("message");
+      } else if (selected === "GLOBAL THERMONUCLEAR WAR") {
+        setMessageText("A STRANGE GAME.\nTHE ONLY WINNING MOVE IS\nNOT TO PLAY.");
+        setMessageChars(0);
+        setCountdown(null);
+        setExitAfterMessage(false);
+        setMuteMessageSound(true);
+        messageSoundPlayed.current = false;
+        messageSoundStopped.current = false;
+        setGameState("message");
+      } else {
+        setMessageText("UNDER CONSTRUCTION...");
+        setMessageChars(0);
+        setCountdown(null);
+        setExitAfterMessage(false);
+        setMuteMessageSound(false);
+        messageSoundPlayed.current = false;
+        messageSoundStopped.current = false;
+        setGameState("message");
+      }
+    }
+    setGameChoice("");
   }, []);
 
   // Initialize audio engine
@@ -288,98 +342,21 @@ export default function App() {
     }
   }, [gameState]);
 
-  // Keyboard input handler
+  // Keyboard input handler (desktop — input screens handled by real <input> elements)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameState === "password") {
-        if (e.key === "Enter") {
-          if (passwordInput.toLowerCase() === "joshua") {
-            setPasswordError(false);
-            if (audioReady) {
-              setGameState("intro");
-            } else {
-              pendingIntro.current = true;
-            }
-          } else {
-            setPasswordInput("");
-            setPasswordError(true);
-          }
-        } else if (e.key === "Backspace") {
-          setPasswordInput((p) => p.slice(0, -1));
-          setPasswordError(false);
-        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-          setPasswordInput((p) => p + e.key);
-          setPasswordError(false);
-        }
+      // Skip if a real input element is focused — those screens handle their own input
+      if ((e.target as HTMLElement).tagName === "INPUT") return;
+
+      if (gameState === "password" || gameState === "respond" || gameState === "gamelist") {
+        // These screens use real <input> elements; focus them if not already
+        if (gameState === "password") passwordInputRef.current?.focus();
+        else if (gameState === "respond") respondInputRef.current?.focus();
+        else if (gameState === "gamelist") gameChoiceInputRef.current?.focus();
         return;
       }
 
       if (gameState === "intro") return;
-
-      if (gameState === "respond") {
-        if (e.key === "Enter") {
-          setResponseInput((prev) => {
-            if (/^y(es)?$/i.test(prev.trim())) {
-              setGameState("gamelist");
-            } else if (prev.length > 0) {
-              resetToStart();
-            }
-            return "";
-          });
-        } else if (e.key === "Backspace") {
-          setResponseInput((p) => p.slice(0, -1));
-        } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-          setResponseInput((p) => p + e.key);
-        }
-        return;
-      }
-
-      if (gameState === "gamelist") {
-        if (e.key === "Enter") {
-          setGameChoice((prev) => {
-            const num = parseInt(prev, 10);
-            if (num >= 1 && num <= GAMES.length) {
-              const selected = GAMES[num - 1];
-              if (selected === "TIC TAC TOE") {
-                setGameState("playing");
-              } else if (selected === "QUIT") {
-                setMessageText("GOODBYE.");
-                setMessageChars(0);
-                setCountdown(null);
-                setExitAfterMessage(true);
-                setMuteMessageSound(false);
-                messageSoundPlayed.current = false;
-                messageSoundStopped.current = false;
-                setGameState("message");
-              } else if (selected === "GLOBAL THERMONUCLEAR WAR") {
-                setMessageText("A STRANGE GAME.\nTHE ONLY WINNING MOVE IS\nNOT TO PLAY.");
-                setMessageChars(0);
-                setCountdown(null);
-                setExitAfterMessage(false);
-                setMuteMessageSound(true);
-                messageSoundPlayed.current = false;
-                messageSoundStopped.current = false;
-                setGameState("message");
-              } else {
-                setMessageText("UNDER CONSTRUCTION...");
-                setMessageChars(0);
-                setCountdown(null);
-                setExitAfterMessage(false);
-                setMuteMessageSound(false);
-                messageSoundPlayed.current = false;
-                messageSoundStopped.current = false;
-                setGameState("message");
-              }
-            }
-            return "";
-          });
-        } else if (e.key === "Backspace") {
-          setGameChoice((p) => p.slice(0, -1));
-        } else if (e.key >= "0" && e.key <= "9") {
-          setGameChoice((p) => p + e.key);
-        }
-        return;
-      }
 
       if (gameState === "playing" && turn === "X" && !aiThinking) {
         if (e.key === "ArrowUp") {
@@ -439,7 +416,7 @@ export default function App() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [gameState, passwordInput, turn, aiThinking, audioReady, resetGame, resetToStart]);
+  }, [gameState, turn, aiThinking, resetGame]);
 
   // Mouse click handler for cells
   const handleCellClick = (index: number) => {
@@ -517,11 +494,39 @@ export default function App() {
     <div className="terminal">
       <div className="terminal-inner">
         {gameState === "password" && (
-          <div className="password-screen">
+          <div className="password-screen" onClick={() => passwordInputRef.current?.focus()}>
             <div className="password-label">Enter password</div>
             <div className="password-field">
               <span className="password-mask">{"*".repeat(passwordInput.length)}</span>
               <span className="cursor">{"\u2588"}</span>
+              <input
+                ref={passwordInputRef}
+                className="sr-input"
+                type="text"
+                value={passwordInput}
+                onChange={(e) => { setPasswordInput(e.target.value); setPasswordError(false); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (passwordInput.toLowerCase() === "joshua") {
+                      setPasswordError(false);
+                      if (audioReady) {
+                        setGameState("intro");
+                      } else {
+                        pendingIntro.current = true;
+                      }
+                    } else {
+                      setPasswordInput("");
+                      setPasswordError(true);
+                    }
+                  }
+                }}
+                autoFocus
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="go"
+              />
             </div>
             {passwordError && <div className="error" style={{ marginTop: 12 }}>Access denied.</div>}
           </div>
@@ -538,13 +543,38 @@ export default function App() {
         )}
 
         {gameState === "respond" && (
-          <div className="respond-screen">
+          <div className="respond-screen" onClick={() => respondInputRef.current?.focus()}>
             <div className="respond-text">
               {INTRO_TEXT.split("\n").map((line, i, arr) => (
                 <div key={i}>
                   {line}
                   {i === arr.length - 1 && (
-                    <>&nbsp;&nbsp;<span className="respond-input">{responseInput}</span><span className="cursor">{"\u2588"}</span></>
+                    <span className="respond-input-wrap">
+                      &nbsp;&nbsp;<span className="respond-input">{responseInput}</span><span className="cursor">{"\u2588"}</span>
+                      <input
+                        ref={respondInputRef}
+                        className="sr-input"
+                        type="text"
+                        value={responseInput}
+                        onChange={(e) => setResponseInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            if (/^y(es)?$/i.test(responseInput.trim())) {
+                              setGameState("gamelist");
+                            } else if (responseInput.length > 0) {
+                              resetToStart();
+                            }
+                            setResponseInput("");
+                          }
+                        }}
+                        autoFocus
+                        autoComplete="off"
+                        autoCapitalize="off"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        enterKeyHint="go"
+                      />
+                    </span>
                   )}
                 </div>
               ))}
@@ -575,9 +605,26 @@ export default function App() {
               })}
             </div>
             <div className="spacer" />
-            <div className="gamelist-input">
+            <div className="gamelist-input" onClick={() => gameChoiceInputRef.current?.focus()}>
               WHICH GAME?&nbsp;&nbsp;<span className="gamelist-input-value">{gameChoice}</span>
               <span className="cursor">{"\u2588"}</span>
+              <input
+                ref={gameChoiceInputRef}
+                className="sr-input"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={gameChoice}
+                onChange={(e) => setGameChoice(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    submitGameChoice(gameChoice);
+                  }
+                }}
+                autoFocus
+                autoComplete="off"
+                enterKeyHint="go"
+              />
             </div>
           </div>
         )}
@@ -615,13 +662,22 @@ export default function App() {
 
             {gameState === "prompt" && (
               <div className="prompt-line">
-                Play again? (y/n)&nbsp;&nbsp;
-                <span className="cursor">{"\u2588"}</span>
+                <div>Play again?</div>
+                <div className="prompt-buttons">
+                  <button className="prompt-btn prompt-btn-yes" onClick={resetGame}>Yes</button>
+                  <button className="prompt-btn prompt-btn-no" onClick={() => setGameState("gamelist")}>No</button>
+                </div>
+              </div>
+            )}
+
+            {gameState === "playing" && (
+              <div className="touch-quit">
+                <button className="quit-btn" onClick={() => { setGameState("gamelist"); setGameChoice(""); }}>Quit</button>
               </div>
             )}
 
             <div className="hint">
-              Arrow keys: move | Enter: place | Click: place | q: quit
+              Tap cells to play
             </div>
           </div>
         )}

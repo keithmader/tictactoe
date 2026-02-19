@@ -273,6 +273,11 @@ body {
   background: var(--bg-surface);
 }
 
+/* Touch-friendly game list (visible only on touch devices) */
+.game-list-touch {
+  display: none;
+}
+
 .gamelist-input {
   margin-top: 16px;
   color: var(--text-dim);
@@ -280,6 +285,48 @@ body {
 
 .gamelist-input-value {
   color: var(--text);
+}
+
+/* Touch device: show tappable list, hide keyboard list + number input */
+@media (pointer: coarse) {
+  .game-list-keyboard {
+    display: none;
+  }
+
+  .gamelist-input {
+    display: none;
+  }
+
+  .game-list-touch {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .game-list-touch-item {
+    font-family: inherit;
+    font-size: 0.85em;
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--bg-surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  }
+
+  .game-list-touch-item:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-teal);
+  }
+
+  .game-list-touch-item:active {
+    transform: scale(0.98);
+    background: var(--bg-hover);
+  }
 }
 
 /* Message screen */

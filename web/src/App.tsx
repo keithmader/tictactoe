@@ -586,7 +586,7 @@ export default function App() {
           <div className="gamelist-screen">
             <div className="gamelist-title">LIST OF GAMES</div>
             <div className="spacer" />
-            <div className="game-list">
+            <div className="game-list game-list-keyboard">
               {Array.from({ length: Math.ceil(GAMES.length / 2) }, (_, i) => {
                 const leftNum = String(i + 1).padStart(2);
                 const rightIdx = i + Math.ceil(GAMES.length / 2);
@@ -603,6 +603,17 @@ export default function App() {
                   </React.Fragment>
                 );
               })}
+            </div>
+            <div className="game-list-touch">
+              {GAMES.map((game, i) => (
+                <button
+                  key={i}
+                  className="game-list-touch-item"
+                  onClick={() => submitGameChoice(String(i + 1))}
+                >
+                  {game}
+                </button>
+              ))}
             </div>
             <div className="spacer" />
             <div className="gamelist-input" onClick={() => gameChoiceInputRef.current?.focus()}>

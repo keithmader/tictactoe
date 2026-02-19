@@ -39,6 +39,52 @@ const GAMES = [
 ];
 const GREETING_END = INTRO_TEXT.indexOf("\n");
 
+/* SVG Icon Components */
+function XIcon({ win }: { win?: boolean }) {
+  return (
+    <svg
+      width="60%"
+      height="60%"
+      viewBox="0 0 24 24"
+      fill="none"
+      className={`icon-drop-in${win ? " icon-win" : ""}`}
+    >
+      <line
+        x1="4" y1="4" x2="20" y2="20"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line
+        x1="20" y1="4" x2="4" y2="20"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function OIcon({ win }: { win?: boolean }) {
+  return (
+    <svg
+      width="60%"
+      height="60%"
+      viewBox="0 0 24 24"
+      fill="none"
+      className={`icon-drop-in${win ? " icon-win" : ""}`}
+    >
+      <circle
+        cx="12" cy="12" r="8"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
 export default function App() {
   const [board, setBoard] = useState<Board>(createBoard());
   const [cursor, setCursor] = useState(4);
@@ -423,21 +469,27 @@ export default function App() {
     const isCursor =
       gameState === "playing" && turn === "X" && !aiThinking && index === cursor;
 
-    let content = "\u00A0"; // nbsp for empty
     let className = "cell";
-    let spanClass = "";
-
-    if (cell === "X") {
-      content = "X";
-      spanClass = isWinCell ? "win" : "x";
-    } else if (cell === "O") {
-      content = "O";
-      spanClass = isWinCell ? "win" : "o";
-    }
 
     if (isCursor) {
       className += " is-cursor";
-      if (cell === null) content = "_";
+    }
+
+    let content: React.ReactNode = null;
+    if (cell === "X") {
+      content = (
+        <span className={isWinCell ? "win" : "x"}>
+          <XIcon win={isWinCell} />
+        </span>
+      );
+    } else if (cell === "O") {
+      content = (
+        <span className={isWinCell ? "win" : "o"}>
+          <OIcon win={isWinCell} />
+        </span>
+      );
+    } else if (isCursor) {
+      content = <span className="dim">{"\u2588"}</span>;
     }
 
     return (
@@ -446,7 +498,7 @@ export default function App() {
         className={className}
         onClick={() => handleCellClick(index)}
       >
-        <span className={spanClass}>{content}</span>
+        {content}
       </div>
     );
   };
@@ -463,116 +515,117 @@ export default function App() {
 
   return (
     <div className="terminal">
-      {gameState === "password" && (
-        <div>
-          <div>
-            Enter password:&nbsp;&nbsp;
-            <span className="password-mask">{"*".repeat(passwordInput.length)}</span>
-            <span className="cursor">_</span>
-          </div>
-          {passwordError && <div className="error">Access denied.</div>}
-        </div>
-      )}
-
-      {gameState === "intro" && (
-        <div>
-          {INTRO_TEXT.slice(0, introChars).split("\n").map((line, i) => (
-            <div key={i}>{line || "\u00A0"}</div>
-          ))}
-        </div>
-      )}
-
-      {gameState === "respond" && (
-        <div>
-          {INTRO_TEXT.split("\n").map((line, i, arr) => (
-            <div key={i}>
-              {line}
-              {i === arr.length - 1 && (
-                <>&nbsp;&nbsp;{responseInput}<span className="cursor">_</span></>
-              )}
+      <div className="terminal-inner">
+        {gameState === "password" && (
+          <div className="password-screen">
+            <div className="password-label">Enter password</div>
+            <div className="password-field">
+              <span className="password-mask">{"*".repeat(passwordInput.length)}</span>
+              <span className="cursor">{"\u2588"}</span>
             </div>
-          ))}
-        </div>
-      )}
-
-      {gameState === "gamelist" && (
-        <div>
-          <div className="bold">LIST OF GAMES</div>
-          <div className="spacer" />
-          <div className="game-list">
-            {Array.from({ length: Math.ceil(GAMES.length / 2) }, (_, i) => {
-              const leftNum = String(i + 1).padStart(2);
-              const rightIdx = i + Math.ceil(GAMES.length / 2);
-              return (
-                <React.Fragment key={i}>
-                  <div className="game-list-item">
-                    {leftNum}. {GAMES[i]}
-                  </div>
-                  <div className="game-list-item">
-                    {rightIdx < GAMES.length
-                      ? `${String(rightIdx + 1).padStart(2)}. ${GAMES[rightIdx]}`
-                      : ""}
-                  </div>
-                </React.Fragment>
-              );
-            })}
+            {passwordError && <div className="error" style={{ marginTop: 12 }}>Access denied.</div>}
           </div>
-          <div className="spacer" />
-          <div className="input-line">
-            WHICH GAME?&nbsp;&nbsp;{gameChoice}
-            <span className="cursor">_</span>
+        )}
+
+        {gameState === "intro" && (
+          <div className="intro-screen">
+            <div className="intro-text">
+              {INTRO_TEXT.slice(0, introChars).split("\n").map((line, i) => (
+                <div key={i}>{line || "\u00A0"}</div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {gameState === "message" && (
-        <div>
-          <div className="bold">
-            {messageText.slice(0, messageChars).split("\n").map((line, i) => (
-              <div key={i}>{line || "\u00A0"}</div>
-            ))}
+        {gameState === "respond" && (
+          <div className="respond-screen">
+            <div className="respond-text">
+              {INTRO_TEXT.split("\n").map((line, i, arr) => (
+                <div key={i}>
+                  {line}
+                  {i === arr.length - 1 && (
+                    <>&nbsp;&nbsp;<span className="respond-input">{responseInput}</span><span className="cursor">{"\u2588"}</span></>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-          {countdown !== null && !exitAfterMessage && (
-            <>
-              <div className="spacer" />
-              <div>RETURNING TO GAME MENU IN {countdown} SECONDS</div>
-            </>
-          )}
-        </div>
-      )}
+        )}
 
-      {(gameState === "playing" || gameState === "gameover" || gameState === "prompt") && (
-        <div>
-          <div className="title">Tic Tac Toe</div>
-          <div className="spacer" />
-
-          <div className="board">
-            {Array.from({ length: 9 }, (_, i) => renderCell(i))}
+        {gameState === "gamelist" && (
+          <div className="gamelist-screen">
+            <div className="gamelist-title">LIST OF GAMES</div>
+            <div className="spacer" />
+            <div className="game-list">
+              {Array.from({ length: Math.ceil(GAMES.length / 2) }, (_, i) => {
+                const leftNum = String(i + 1).padStart(2);
+                const rightIdx = i + Math.ceil(GAMES.length / 2);
+                return (
+                  <React.Fragment key={i}>
+                    <div className="game-list-item">
+                      {leftNum}. {GAMES[i]}
+                    </div>
+                    <div className="game-list-item">
+                      {rightIdx < GAMES.length
+                        ? `${String(rightIdx + 1).padStart(2)}. ${GAMES[rightIdx]}`
+                        : ""}
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+            <div className="spacer" />
+            <div className="gamelist-input">
+              WHICH GAME?&nbsp;&nbsp;<span className="gamelist-input-value">{gameChoice}</span>
+              <span className="cursor">{"\u2588"}</span>
+            </div>
           </div>
+        )}
 
-          <div className="spacer" />
-          <div className="status">{statusMessage()}</div>
-
-          <div className="spacer" />
-          <div className="score">
-            W:{score.wins} L:{score.losses} D:{score.draws}
+        {gameState === "message" && (
+          <div className="message-screen">
+            <div className="message-text">
+              {messageText.slice(0, messageChars).split("\n").map((line, i) => (
+                <div key={i}>{line || "\u00A0"}</div>
+              ))}
+            </div>
+            {countdown !== null && !exitAfterMessage && (
+              <div className="message-countdown">
+                Returning to game menu in {countdown}s
+              </div>
+            )}
           </div>
+        )}
 
-          {gameState === "prompt" && (
-            <div style={{ marginTop: "12px" }}>
-              <span className="color-yellow">
+        {(gameState === "playing" || gameState === "gameover" || gameState === "prompt") && (
+          <div className="playing-screen">
+            <div className="title">Tic Tac Toe</div>
+
+            <div className="board">
+              {Array.from({ length: 9 }, (_, i) => renderCell(i))}
+            </div>
+
+            <div className="status">{statusMessage()}</div>
+
+            <div className="score">
+              <span className="score-pill">W <span className="score-pill-value">{score.wins}</span></span>
+              <span className="score-pill">L <span className="score-pill-value">{score.losses}</span></span>
+              <span className="score-pill">D <span className="score-pill-value">{score.draws}</span></span>
+            </div>
+
+            {gameState === "prompt" && (
+              <div className="prompt-line">
                 Play again? (y/n)&nbsp;&nbsp;
-                <span className="cursor">_</span>
-              </span>
-            </div>
-          )}
+                <span className="cursor">{"\u2588"}</span>
+              </div>
+            )}
 
-          <div className="spacer" />
-          <div className="hint">
-            Arrow keys: move | Enter: place | Click: place | q: quit
+            <div className="hint">
+              Arrow keys: move | Enter: place | Click: place | q: quit
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
